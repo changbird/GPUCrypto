@@ -4,9 +4,9 @@ int main()
 {
 	char	filepath[1024] = "test.mp4";
 	
-	jiami("12345687",filepath);
+	jiami("0123456789abcdef",filepath);
 	strcat(filepath,".enc");
-	jiemi("12345687",filepath);
+	jiemi("0123456789abcdef",filepath);
 
 	system("pause");
 

@@ -77,6 +77,9 @@ int jiami(char* md5key,char* filepath)
 
 	runTest(md5key,Aes,OAes,mem_length);
 
+	finish=clock();
+	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
+    printf("\n运行时间为%f秒!\n",totaltime);
 
 	char filename[260];
 	strcpy(filename,filepath);	
@@ -101,7 +104,7 @@ int jiami(char* md5key,char* filepath)
 
 	finish=clock();
 	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
-    printf("\n运行时间为%f秒!\n",totaltime);
+    printf("\n运行加写文件时间为%f秒!\n",totaltime);
 	return 0;
 }
 

@@ -10,8 +10,11 @@ rd /s /q _UpgradeReport_Files
 rd /s /q ipch
 rd /s /q Debug
 rd /s /q Release
+rd /s /q x64
 
 rd /s /q CUDAWinDemo\Debug
+rd /s /q CUDAWinDemo\Release
+rd /s /q CUDAWinDemo\x64
 
 pause
 

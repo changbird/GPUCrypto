@@ -5,7 +5,7 @@
 #include "AES.h"
 
 
-int runTest1(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length); ////解密
+int runDeCry(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length); ////解密
 unsigned long GetFileLen1(const char* szFilePath); //得到文件的长度
 
 extern "C" 
@@ -43,9 +43,8 @@ int jiemi(char* md5key,char* filepath)
 	}
 
 	//计算运行时间
-	clock_t start,finish;
+	clock_t start, finish, cost;
 	double totaltime;
-	start=clock();
 
 	FILE *fp;							//从文件中读入密文
 	if((fp=fopen(filepath,"rb"))==NULL)
@@ -67,8 +66,11 @@ int jiemi(char* md5key,char* filepath)
 	}
 	fclose(fp);
 
-    runTest1(md5key,Aes,OAes,mem_length);
+	printf("\n");
+	printf("正在解密, AES128, EBC mode ...\n");
 
+	start=clock();
+    runDeCry(md5key,Aes,OAes,mem_length);
 	finish=clock();
 
 	char filename[260];
@@ -77,7 +79,7 @@ int jiemi(char* md5key,char* filepath)
 //	int size;
 	//filename[strlen(filename) - 4] = '\0';			//解密文件名为加密文件去掉后缀.bfe
 	FILE* fp_w = fopen(filename,"wb");
-	printf("%s",filename);
+//	printf("%s",filename);
 	//写入输出文件
 	fwrite(OAes, sizeof(unsigned char), (input_length + 15) / 16 * 16, fp_w);
 //	printf("%d\n",size);
@@ -89,12 +91,13 @@ int jiemi(char* md5key,char* filepath)
 	free(OAes);
 
 	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
-    printf("\n运行时间为%f秒!\n",totaltime);
+    printf("解密运行时间为%f秒! 解密数据处理速度%f MBytes\n",totaltime, input_length / totaltime / 1024 / 1024);
+
 	return 0;
 }
 
 //解密
-int runTest1(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length) 
+int runDeCry(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length) 
 {
 	unsigned char *IAes;
 	unsigned char *OAes;
@@ -108,7 +111,8 @@ int runTest1(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned lon
 		printf("请选择要加密的文件并输入您的密码！\n");
 		return -1;
 	}
-*/	md5.Data((unsigned char *)md5key,strlen(md5key),mykey);
+*/	
+    md5.Data((unsigned char *)md5key,strlen(md5key),mykey);
 
 	//读入要解密的文件
 //	for(int k = 2; k < argc; ++k)
@@ -127,8 +131,6 @@ int runTest1(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned lon
 	roundkey = (unsigned int*) malloc(sizeof(unsigned int) * 44);	    //在内存上为密文分配空间
 	if(mem_length < PIECE_SIZE)
 	{
-		printf("-<\n");
-
 		unsigned int* d_roundkey;
 		
 		CUDA_SAFE_CALL( cudaMalloc( (void**) &d_roundkey, sizeof(unsigned int) * 44 ));
@@ -155,11 +157,7 @@ int runTest1(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned lon
 		dim3  grid( (mem_length ) / BLOCK_SIZE / LOOP_IN_BLOCK , 1, 1);		//定义grid, grid大小为 密文长度/ 一个BLOCK中处理的32bit integer数 / BLOCK中循环次数												
 		dim3  threads( BLOCK_SIZE, 1, 1);
 
-		/*开始解密*/
-
-								
-		printf("正在解密...\n");
-
+		/*开始解密*/							
 		AES128_EBC_decry_kernel<<< grid, threads>>>(d_Aes, d_OAes, d_roundkey);
 
 		CUT_CHECK_ERROR("Kernel execution failed\n");	//检查是否正确执行

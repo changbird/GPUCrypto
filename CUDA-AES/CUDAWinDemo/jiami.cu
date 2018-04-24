@@ -4,13 +4,11 @@
 
 #include "md5.h"
 #include "AES.h"
+#include "stdio.h"
 
-//#include "AES_kernel.cu"
-//int runTest(char* md5key,char* filepath); //加密
-int runTest(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length); 
-
+//run AES test
+int runCry(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length); 
 unsigned long GetFileLen(const char* szFilePath); //得到文件的长度
-//extern unsigned char h_Sbox[256];
 
 extern "C" 
 int jiami(char* md5key,char* filepath) 
@@ -50,9 +48,10 @@ int jiami(char* md5key,char* filepath)
 	}
 
 	//计算运行时间
-	clock_t start,finish;
+	clock_t start, finish, cost;
 	double totaltime;
 	FILE *fp;   //从文件中读入密文											
+	
 	if((fp=fopen(filepath,"rb"))==NULL)
 	{
 		printf("无法读入您选择的文件\n");
@@ -66,6 +65,7 @@ int jiami(char* md5key,char* filepath)
 	unsigned char *OAes;									               //内存中的密文
 	OAes = (unsigned char*) malloc(sizeof(unsigned int) * mem_length);  //在内存上为密文分配空间
 	
+	//将整个文件读入内存
 	fread(Aes, sizeof(unsigned char), input_length, fp);
 	for(unsigned int i = input_length; i < 4 * mem_length; i ++)
 	{
@@ -73,18 +73,20 @@ int jiami(char* md5key,char* filepath)
 	}
 	fclose(fp);
 
+	//得到内存加密数据的时间
 	start=clock();
-
-	runTest(md5key,Aes,OAes,mem_length);
-
+	runCry(md5key,Aes,OAes,mem_length);
 	finish=clock();
-	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
-    printf("\n运行时间为%f秒!\n",totaltime);
+
+	cost = finish - start;
+	totaltime = (double)cost / CLOCKS_PER_SEC;
+    
+	printf("加密运行时间为%f秒! 加密数据处理速度%f MBytes/s!\n",totaltime, input_length / totaltime / 1024 / 1024);
 
 	char filename[260];
 	strcpy(filename,filepath);	
 	strcat(filename,".enc");
-	printf("%s",filename);
+//	printf("%s",filename);
 	//写入输出文件
 	FILE* fp_w = fopen(filename,"wb");
 	if(fp_w == NULL)
@@ -104,12 +106,13 @@ int jiami(char* md5key,char* filepath)
 
 	finish=clock();
 	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
-    printf("\n运行加写文件时间为%f秒!\n",totaltime);
+//    printf("\n运行加写文件时间为%f秒!\n",totaltime);
+
 	return 0;
 }
 
 // 加密
-int runTest(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length) 
+int runCry(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long mem_length) 
 {
 	unsigned char *IAes;
 	unsigned char *OAes;
@@ -125,20 +128,22 @@ int runTest(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long
 */
 	md5.Data((unsigned char *)md5key,strlen(md5key),mykey);
 
+   //cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+
 	//读入要加密的文件
 //	for(int k = 2; k < argc; ++k)
 //	{
 	unsigned int *roundkey;							                   //内存中的密文
 	roundkey = (unsigned int*) malloc(sizeof(unsigned int) * 44);	   //在内存上为密文分配空间
-	printf("%d\n",mem_length);
-	printf("%d\n",PIECE_SIZE);
+	
+	printf("mem_length: %d\n",mem_length);
+	printf("PIECE_SIZE %d\n",PIECE_SIZE);
+	
 	if(mem_length < PIECE_SIZE)
 	//初始化CUDA运行环境
 	{
-
-		printf("+>\n");
 		cudaSetDevice(0);	
-		printf("123");
+
 		unsigned int* d_roundkey;
 		CUDA_SAFE_CALL( cudaMalloc( (void**) &d_roundkey, sizeof(unsigned int) * 44 ));
 
@@ -159,22 +164,24 @@ int runTest(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long
 		CUDA_SAFE_CALL( cudaMemcpy( d_Aes, Imem, sizeof(unsigned int) * mem_length, cudaMemcpyHostToDevice) );
 
 		// 设置运行参数
+		// grid中的第一，第二个参数最大是65535， 第三个参数恒定为1.
 		dim3  grid( (mem_length ) / BLOCK_SIZE / LOOP_IN_BLOCK , 1, 1);		//定义grid, grid大小为 密文长度/ 一个BLOCK中处理的32bit integer数 / BLOCK中循环次数												
 		dim3  threads( BLOCK_SIZE, 1, 1);
 
 		/*加密开始*/
+		printf("\n");
+		printf("正在加密, AES128, EBC mode ...\n");
+		
+		//d_Aes是显存中的数据输入地址
+		//d_OAes是显存中的数据输出地址
 
-								
-		printf("正在加密...\n");
-		AES128_EBC_encry_kernel<<< grid, threads>>>(d_Aes, d_OAes, d_roundkey); //加密程序内核
+		AES128_EBC_encry_kernel<<<grid, threads>>>(d_Aes, d_OAes, d_roundkey); //加密程序内核
 
 		CUT_CHECK_ERROR("CUDA内核执行失败！\n");	//检查是否正确执行
-
 
 		CUDA_SAFE_CALL( cudaMemcpy( Omem, d_OAes, sizeof(unsigned int) * mem_length,cudaMemcpyDeviceToHost) );//将输出从显存拷贝到内存	
 			
 		//定义输出文件的文件名
-
 		free(roundkey);
 
 		CUDA_SAFE_CALL(cudaFree(d_Aes));

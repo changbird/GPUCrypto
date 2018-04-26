@@ -31,8 +31,8 @@ Global
 		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.EmuRelease|x64.Build.0 = EmuRelease|x64
 		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|Win32.ActiveCfg = Release|Win32
 		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|Win32.Build.0 = Release|Win32
-		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|x64.ActiveCfg = Release|x64
-		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|x64.Build.0 = Release|x64
+		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|x64.ActiveCfg = Debug|x64
+		{98504C27-93D6-481F-B68A-02A50DDF5EE3}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

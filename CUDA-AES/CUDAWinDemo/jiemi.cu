@@ -91,7 +91,7 @@ int jiemi(char* md5key,char* filepath)
 	free(OAes);
 
 	totaltime=(double)(finish-start)/CLOCKS_PER_SEC;
-    printf("解密运行时间为%f秒! 解密数据处理速度%f MBytes\n",totaltime, input_length / totaltime / 1024 / 1024);
+    printf("解密运行时间为%f秒! 解密数据处理速度%f MBytes/s!\n",totaltime, input_length / totaltime / 1024 / 1024);
 
 	return 0;
 }

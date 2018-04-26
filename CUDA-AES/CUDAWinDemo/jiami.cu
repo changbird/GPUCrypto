@@ -139,7 +139,8 @@ int runCry(char* md5key,unsigned char * Imem,unsigned char * Omem,unsigned long 
 	printf("mem_length: %d\n",mem_length);
 	printf("PIECE_SIZE %d\n",PIECE_SIZE);
 	
-	if(mem_length < PIECE_SIZE)
+	//数据长度<16M
+	if (mem_length < PIECE_SIZE)
 	//初始化CUDA运行环境
 	{
 		cudaSetDevice(0);	
